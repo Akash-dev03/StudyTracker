@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Mail, Hash, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,16 +25,34 @@ export function AddStudentDialog({ isOpen, onClose, onSuccess, editStudent }: Ad
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isCustomClass, setIsCustomClass] = useState(false);
   const { toast } = useToast();
 
-  const classes = ['10A', '10B', '11A', '11B', '12A', '12B'];
+  const classes = ['8A', '8B', '9A', '9B', '10A', '10B'];
+
+  // Reset form when editStudent changes
+  useEffect(() => {
+    if (editStudent) {
+      setFormData({
+        name: editStudent.name,
+        roll_number: editStudent.roll_number,
+        class_name: editStudent.class_name,
+        email: editStudent.email,
+        phone: editStudent.phone || '',
+      });
+      // Check if the class is custom (not in predefined list)
+      setIsCustomClass(!classes.includes(editStudent.class_name));
+    } else {
+      resetForm();
+    }
+  }, [editStudent]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) newErrors.name = 'Name is required';
     if (!formData.roll_number.trim()) newErrors.roll_number = 'Roll number is required';
-    if (!formData.class_name) newErrors.class_name = 'Class is required';
+    if (!formData.class_name.trim()) newErrors.class_name = 'Class is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email format';
 
@@ -87,6 +105,7 @@ export function AddStudentDialog({ isOpen, onClose, onSuccess, editStudent }: Ad
       phone: '',
     });
     setErrors({});
+    setIsCustomClass(false);
   };
 
   const handleClose = () => {
@@ -142,19 +161,51 @@ export function AddStudentDialog({ isOpen, onClose, onSuccess, editStudent }: Ad
             <div className="space-y-2">
               <Label htmlFor="class_name">Class</Label>
               <div className="relative">
-                <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <select
-                  id="class_name"
-                  value={formData.class_name}
-                  onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
-                  className={`w-full pl-10 pr-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${errors.class_name ? 'border-destructive' : ''}`}
-                >
-                  <option value="">Select Class</option>
-                  {classes.map(cls => (
-                    <option key={cls} value={cls}>{cls}</option>
-                  ))}
-                </select>
+                <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                {isCustomClass ? (
+                  <Input
+                    id="class_name"
+                    placeholder="Enter custom class name"
+                    value={formData.class_name}
+                    onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
+                    className={`pl-10 ${errors.class_name ? 'border-destructive' : ''}`}
+                  />
+                ) : (
+                  <select
+                    id="class_name"
+                    value={formData.class_name}
+                    onChange={(e) => {
+                      if (e.target.value === '__custom__') {
+                        setIsCustomClass(true);
+                        setFormData({ ...formData, class_name: '' });
+                      } else {
+                        setFormData({ ...formData, class_name: e.target.value });
+                      }
+                    }}
+                    className={`w-full pl-10 pr-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${errors.class_name ? 'border-destructive' : ''}`}
+                  >
+                    <option value="">Select Class</option>
+                    {classes.map(cls => (
+                      <option key={cls} value={cls}>{cls}</option>
+                    ))}
+                    <option value="__custom__">+ Add Custom Class</option>
+                  </select>
+                )}
               </div>
+              {isCustomClass && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="text-xs px-0 h-auto"
+                  onClick={() => {
+                    setIsCustomClass(false);
+                    setFormData({ ...formData, class_name: '' });
+                  }}
+                >
+                  ← Back to class list
+                </Button>
+              )}
               {errors.class_name && <p className="text-sm text-destructive">{errors.class_name}</p>}
             </div>
           </div>
@@ -180,7 +231,7 @@ export function AddStudentDialog({ isOpen, onClose, onSuccess, editStudent }: Ad
             <Input
               id="phone"
               type="tel"
-              placeholder="+1 (555) 123-4567"
+              placeholder="+91 9639114022"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             />
